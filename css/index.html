@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body{
+            margin: 0;
+            padding: 0;
+            background-color: #3f06ea;
+        }
+        .container{
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width:238px;
+            /* height: 238px; */
+            /* background-color: blanchedalmond; */
+            transform: translate(-50%,-50%);
+
+        }
+        .ball{
+            width: 100px;
+            height: 100px;
+            border:8px solid #000000;
+            border-radius: 50%;
+            display: inline-block;
+            background-color: #ffffff;
+            vertical-align: top;
+             position: relative;/*相对定位，子元素相对它定位 */
+        }
+        .face{
+            width: 70px;
+            height: 30px;
+            position: absolute;/*绝对定位，子元素相对于父元素定位;*/
+            right: 0;
+            top: 30px;
+            /* background-color: #22de99; */
+            border-top-right-radius:15px ;
+
+        }
+        .eye{
+            width: 15px;
+            height: 14px;
+            border-radius: 50%;
+            border-bottom: 5px solid #000000;
+            position: absolute;
+        }
+        .eye-l{
+            left: 10px;
+            top: 5px;
+        }
+       .eye-r{
+            right: 10px;
+            top: 5px;
+        }
+        .eye-r-p{
+            border: top 5px solid #000000;/*上边框; */;
+            right: 10px;
+            top: 5px;
+            transform: rotate(180deg);/*旋转180度; */}
+
+            .mouth{
+                width: 30px;
+                height: 15px;
+                border-radius: 50%;
+                border-bottom: 5px solid #000000;
+                position: absolute;
+                bottom: -5PX;
+                transform: translateX(3px);
+                left: 0;
+                right: 0;
+                margin: auto;
+            }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="l-ball" class="ball">
+        <div class="face face-l">
+            <div class="eye eye-l"></div>
+                <div class="eye eye-r"></div>
+                <div class="mouth"></div>
+        
+        </div>
+        </div>
+        <div id="r-ball" class="ball">
+        <div class="face face-r">
+            <div class="eye eye-l eye-r-p"></div>
+                <div class="eye eye-r eye-r-p"></div>
+                    <div class="mouth mouth-r"></div>
+    </div>
+</div>
+</div>
+</body>
+</html>

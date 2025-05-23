@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        /* css reset 样式重置 */
+        *{
+          margin: 0;
+          padding: 0;
+        }
+        .box{
+        width: 200px;
+        height: 200px;
+        background-color: #3f06ea;
+        position:absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%,-50%); /*根据自身宽高的一半进行定位 */
+        }
+        .inner-box{
+        width: 150px;
+        height: 150px;
+        background-color: #20ac30;
+         position: relative;/*相对定位，子元素相对它定位 ; */
+        top: 10px;
+        left: 10px;
+        margin-top: 30px;
+        }
+       .child-box{
+        width: 100px;
+        height: 100px;
+        background-color: #4a10a1;
+        position: relative;
+        top: 10px;
+        left: 10px;
+        margin-top: 30px;
+       }
+    </style>
+</head>
+<body>
+    <div class="box">
+     <div class="inner-box">
+        <div class="child-box"></div>
+     </div>
+    </div>
+</body>
+</html>
