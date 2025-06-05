@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+         /* 选择紧接在h1元素后面的一个p元素 */
+        h1 +p{
+            color: red;
+        }
+        /* 选择h1元素后面的所有连着的p元素 */
+        h1 ~p{
+            color: green;
+        }
+        /* 选择class为container的元素中的最近一辈（紧挨着算同一辈）p元素 */
+        .container > p{
+            font-weight: bold;
+        }
+        /* 选择class为container的元素中的所有p元素 */
+        /* .container p的优先级高 */
+        .container p{
+            text-decoration:underline;
+        }
+        /* 只选择h1后面第二个p元素 */
+        h1 +p+p{
+            color: yellow;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <p>标题之前的段落</p>
+        <h1>标题</h1>
+        <p>这是第一段文字</p>
+        <p>这是第二段文字</p>
+        <a href="#">链接</a>
+        <span>这是一个span元素</span>
+        <div class="inner">
+            <p>这是内部段落</p>
+        </div>
+    </div>
+    
+</body>
+</html>
