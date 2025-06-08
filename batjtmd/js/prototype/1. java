@@ -1,0 +1,11 @@
+pubilc class Puppy{
+    int pupyAge;
+    //构造方法
+    public Pupy(age){
+        pupyAge = age;
+    }
+    //公有方法
+    public viod say(){
+        system.out.println("王阿旺");
+    }
+}
