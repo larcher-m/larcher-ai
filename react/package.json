@@ -1,0 +1,12 @@
+{
+  "name": "react",
+  "version": "1.0.0",
+  "description": "friends 数据\r App\r 挂载点\r 页面的显示\r - 原生JS\r   DOM 编程\r   底层API 不够高效\r   聚焦于业务\r   前端切图崽（html , css + 一点js） ->前端开发工程师（微博，美团）JS 框架（Vue / React）-> node 全栈开发 （node + 数据库）-> react native Android + ios App -> AIGC -> 全干工程师",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
