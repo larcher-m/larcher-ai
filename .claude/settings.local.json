@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c ' *)",
+      "Bash(python fix_cake3.py)",
+      "Bash(python *)"
+    ]
+  }
+}
