@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>🎂 生日贺卡制作器</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* ===== Stars ===== */
+  #stars { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+
+  /* ===== Balloons ===== */
+  .balloon-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+  .balloon {
+    position: absolute; bottom: -120px;
+    width: 46px; height: 58px;
+    border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+    opacity: 0.8;
+    animation: floatUp linear infinite;
+  }
+  .balloon::after {
+    content: ''; position: absolute; bottom: -8px; left: 50%;
+    transform: translateX(-50%); width: 1.5px; height: 24px;
+    background: rgba(255,255,255,0.25);
+  }
+  .balloon::before {
+    content: '▲'; position: absolute; bottom: -14px; left: 50%;
+    transform: translateX(-50%) scaleX(0.5); color: inherit; font-size: 8px;
+  }
+  @keyframes floatUp {
+    0%   { transform: translateY(0) rotate(0deg); opacity: 0.8; }
+    100% { transform: translateY(-110vh) rotate(8deg); opacity: 0; }
+  }
+
+  /* ===== Card ===== */
+  .card-wrapper {
+    position: relative;
+    z-index: 2;
+    perspective: 1200px;
+    cursor: pointer;
+  }
+  .card {
+    width: min(420px, 82vw);
+    aspect-ratio: 3 / 4;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .card.open { transform: rotateY(-180deg); }
+
+  .card-face {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    backface-visibility: hidden;
+    border-radius: min(20px, 3.5vw);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: clamp(20px, 5vw, 36px) clamp(16px, 5vw, 30px);
+    text-align: center;
+  }
+
+  .card-front {
+    background: linear-gradient(145deg, #ff6b9d, #c44dff);
+    color: #fff;
+  }
+  .card-front h1 { font-size: clamp(1.6em, 7vw, 2.6em); margin-bottom: clamp(3px, 1.5vw, 6px); text-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+  .card-front .sub { font-size: clamp(0.85em, 3vw, 1.05em); opacity: 0.85; margin-bottom: clamp(2px, 1vw, 4px); }
+  .card-front .recipient-name {
+    font-size: clamp(1.1em, 5vw, 1.6em); font-weight: bold;
+    margin: clamp(2px, 1vw, 4px) 0; opacity: 0.95;
+  }
+  .card-front .tap-hint {
+    margin-top: clamp(12px, 4vw, 22px); font-size: clamp(0.72em, 2.5vw, 0.82em); opacity: 0.55;
+    animation: pulse 2s ease-in-out infinite;
+    user-select: none;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 0.35; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
+
+  .front-emoji { font-size: clamp(2.5em, 12vw, 4.5em); margin: clamp(3px, 1.5vw, 6px) 0; animation: bounce 2s ease-in-out infinite; line-height: 1.2; }
+  @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+  .card-inside {
+    background: linear-gradient(145deg, #fff9e6, #fff3cd);
+    color: #333; transform: rotateY(180deg);
+    justify-content: flex-start; padding-top: clamp(18px, 5vw, 32px);
+    overflow-y: auto;
+  }
+  .card-inside::-webkit-scrollbar { width: 3px; }
+  .card-inside::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 2px; }
+
+  .card-inside h2 {
+    font-size: clamp(1.15em, 5vw, 1.7em);
+    background: linear-gradient(135deg, #ff6b9d, #c44dff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: clamp(4px, 2vw, 8px);
+  }
+  .card-inside .message {
+    font-size: clamp(0.82em, 3vw, 1em); line-height: 1.8; color: #555;
+    margin: clamp(4px, 2vw, 6px) clamp(10px, 3vw, 16px); white-space: pre-line;
+    flex: 1; display: flex; align-items: center; justify-content: center;
+  }
+  .card-inside .message strong {
+    background: linear-gradient(135deg, #ff6b9d, #c44dff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+
+  /* ===== Cake v4 — SVG ===== */
+  .inside-cake {
+    flex-shrink: 0;
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-bottom: clamp(6px, 1.5vw, 14px);
+  }
+  .inside-cake svg {
+    width: clamp(140px, 38vw, 190px);
+    height: auto;
+    display: block;
+  }
+  @keyframes flicker {
+    0%   { transform: scale(1) rotate(-1.5deg); opacity: 0.9; }
+    50%  { transform: scale(1.06) rotate(1deg); opacity: 1; }
+    100% { transform: scale(0.96) rotate(-1deg); opacity: 0.85; }
+  }
+  .inside-cake svg .flame {
+    animation: flicker 0.4s ease-in-out infinite alternate;
+    transform-origin: center;
+    transform-box: fill-box;
+  }
+
+  /* ===== Confetti ===== */
+  #confetti-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+
+  .footer-note {
+    position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+    color: rgba(255,255,255,0.12); font-size: 0.72em; z-index: 1; letter-spacing: 2px;
+    pointer-events: none; white-space: nowrap;
+  }
+
+  /* ===== Floating Editor ===== */
+  .editor-toggle {
+    position: fixed;
+    top: 16px; right: 16px;
+    z-index: 100;
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    border: none;
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(12px);
+    color: #fff;
+    font-size: 1.3em;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .editor-toggle:hover { background: rgba(255,255,255,0.2); transform: scale(1.05); }
+
+  .editor-panel {
+    position: fixed;
+    top: 0; right: 0;
+    width: 360px;
+    height: 100vh;
+    z-index: 99;
+    background: rgba(20, 18, 50, 0.92);
+    backdrop-filter: blur(24px);
+    border-left: 1px solid rgba(255,255,255,0.06);
+    padding: 70px 22px 20px;
+    overflow-y: auto;
+    color: #ddd;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transform: translateX(100%);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .editor-panel.open { transform: translateX(0); }
+  .editor-panel::-webkit-scrollbar { width: 3px; }
+  .editor-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+  .editor-panel .panel-header {
+    font-size: 1.1em; font-weight: 600;
+    background: linear-gradient(135deg, #ff6b9d, #c44dff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 2px;
+  }
+
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 0.72em; opacity: 0.45; letter-spacing: 1px; text-transform: uppercase; }
+  .field input, .field textarea, .field select {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 9px 11px;
+    color: #eee;
+    font-size: 0.88em;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus {
+    border-color: rgba(196, 77, 255, 0.4);
+  }
+  .field textarea { resize: vertical; min-height: 70px; }
+  .field select option { background: #1e1b4b; color: #eee; }
+
+  .color-options {
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .color-options button {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 2px solid transparent; cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s;
+    flex-shrink: 0;
+  }
+  .color-options button:hover { transform: scale(1.15); }
+  .color-options button.active { border-color: #fff; transform: scale(1.15); }
+  .color-options button.custom-btn {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: conic-gradient(red,yellow,lime,cyan,blue,magenta,red);
+    border: 2px solid transparent; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: #fff; flex-shrink: 0;
+  }
+
+  .editor-actions {
+    display: flex; gap: 8px; margin-top: 4px;
+  }
+  .editor-actions button {
+    flex: 1; padding: 9px; border: none; border-radius: 8px;
+    font-size: 0.85em; cursor: pointer; transition: transform 0.2s, opacity 0.2s;
+  }
+  .editor-actions button:hover { transform: translateY(-1px); }
+  .editor-actions .btn-primary {
+    background: linear-gradient(135deg, #ff6b9d, #c44dff);
+    color: #fff;
+  }
+  .editor-actions .btn-secondary { background: rgba(255,255,255,0.08); color: #aaa; }
+  .editor-actions .btn-secondary:hover { background: rgba(255,255,255,0.14); }
+
+  .toggle-group {
+    display: flex; gap: 12px; flex-wrap: wrap;
+  }
+  .toggle-group label {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 0.78em; opacity: 0.65; cursor: pointer;
+  }
+  .toggle-group input[type="checkbox"] { accent-color: #c44dff; }
+
+  /* ===== Generation History ===== */
+  .gen-history { margin-top: 2px; }
+  .gen-history-header { font-size: 0.72em; opacity: 0.45; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+  .gen-history-item {
+    background: rgba(255,255,255,0.05); border-radius: 8px; padding: 7px 9px;
+    margin-bottom: 5px; display: flex; align-items: center; gap: 6px;
+    transition: background 0.2s;
+  }
+  .gen-history-item:hover { background: rgba(255,255,255,0.09); }
+  .gen-history-item .preview {
+    flex: 1; font-size: 0.76em; color: #999; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap;
+  }
+  .gen-history-item .use-btn {
+    flex-shrink: 0; padding: 2px 10px; border: none; border-radius: 5px;
+    background: rgba(196,77,255,0.25); color: #ccc; font-size: 0.7em; cursor: pointer;
+    transition: background 0.2s;
+  }
+  .gen-history-item .use-btn:hover { background: rgba(196,77,255,0.45); color: #fff; }
+  .gen-history-item .del-btn {
+    flex-shrink: 0; width: 20px; height: 20px; border: none; border-radius: 50%;
+    background: transparent; color: #555; font-size: 0.65em; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .gen-history-item .del-btn:hover { background: rgba(255,255,255,0.08); color: #ff6b6b; }
+
+  /* ===== Mobile ===== */
+  @media (max-height: 500px) and (orientation: landscape) {
+    .card { width: min(320px, 55vw); max-height: 90svh; }
+    .card-front .front-emoji { font-size: 2em; }
+    .card-front h1 { font-size: 1.3em; }
+    .card-front .recipient-name { font-size: 1em; }
+    .card-inside { padding-top: 12px; }
+    .card-inside h2 { font-size: 1em; margin-bottom: 4px; }
+    .inside-cake { transform: scale(0.7); }
+    .card-inside .message { font-size: 0.75em; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="stars"></canvas>
+<div class="balloon-container" id="balloonContainer"></div>
+<canvas id="confetti-canvas"></canvas>
+
+<!-- Card -->
+<div class="card-wrapper" onclick="toggleCard()">
+  <div class="card" id="card">
+    <div class="card-face card-front" id="cardFront">
+      <div class="front-emoji" id="previewEmoji">🎂</div>
+      <h1 id="previewTitle">生日快乐!</h1>
+      <div class="sub" id="previewSub">Happy Birthday!</div>
+      <div class="recipient-name" id="previewRecipient">亲爱的朋友</div>
+      <div class="tap-hint" id="tapHint">👆 点击打开</div>
+    </div>
+    <div class="card-face card-inside">
+      <h2>🎉 生日快乐! 🎉</h2>
+      <div class="message" id="previewMessage"></div>
+      <div class="inside-cake">
+        <svg viewBox="0 0 200 210" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="plateGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f0d5b0"/>
+              <stop offset="100%" stop-color="#d4a574"/>
+            </linearGradient>
+            <linearGradient id="tier1Grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#ffe8db"/>
+              <stop offset="100%" stop-color="#fcc4aa"/>
+            </linearGradient>
+            <linearGradient id="tier2Grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#fcd0bd"/>
+              <stop offset="100%" stop-color="#f0a880"/>
+            </linearGradient>
+            <linearGradient id="candleGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#f7dc6f"/>
+              <stop offset="50%" stop-color="#edd05e"/>
+              <stop offset="100%" stop-color="#e0b84a"/>
+            </linearGradient>
+          </defs>
+          <ellipse cx="100" cy="194" rx="84" ry="14" fill="rgba(0,0,0,0.06)"/>
+          <ellipse cx="100" cy="190" rx="84" ry="14" fill="url(#plateGrad)"/>
+          <ellipse cx="100" cy="188" rx="77" ry="10" fill="rgba(255,255,255,0.2)"/>
+          <rect x="32" y="137" width="136" height="48" rx="14" fill="url(#tier2Grad)"/>
+          <path d="M38 137 Q40 152 42 137" fill="#fffcf5"/>
+          <path d="M58 137 Q60 158 62 137" fill="#fffcf5"/>
+          <path d="M82 137 Q84 162 86 137" fill="#fffcf5"/>
+          <path d="M108 137 Q110 160 112 137" fill="#fffcf5"/>
+          <path d="M132 137 Q134 156 136 137" fill="#fffcf5"/>
+          <path d="M154 137 Q156 150 158 137" fill="#fffcf5"/>
+          <rect x="30" y="134" width="140" height="8" rx="4" fill="#fffcf5"/>
+          <rect x="52" y="103" width="96" height="38" rx="12" fill="url(#tier1Grad)"/>
+          <rect x="50" y="100" width="100" height="7" rx="3.5" fill="#fffcf5"/>
+          <rect x="48" y="152" width="5" height="3" rx="1.5" fill="#ff6b9d" transform="rotate(-20 50 153)"/>
+          <rect x="72" y="158" width="5" height="3" rx="1.5" fill="#54a0ff" transform="rotate(15 74 159)"/>
+          <rect x="95" y="150" width="5" height="3" rx="1.5" fill="#feca57" transform="rotate(-10 97 151)"/>
+          <rect x="118" y="160" width="5" height="3" rx="1.5" fill="#1dd1a1" transform="rotate(25 120 161)"/>
+          <rect x="142" y="154" width="5" height="3" rx="1.5" fill="#f368e0" transform="rotate(-30 144 155)"/>
+          <rect x="60" y="168" width="4" height="3" rx="1.5" fill="#00d2d3" transform="rotate(10 62 169)"/>
+          <rect x="130" y="170" width="4" height="3" rx="1.5" fill="#ff9f43" transform="rotate(-15 132 171)"/>
+          <rect x="62" y="114" width="4" height="2.5" rx="1.25" fill="#ff9f43" transform="rotate(30 64 115)"/>
+          <rect x="82" y="120" width="4" height="2.5" rx="1.25" fill="#00d2d3" transform="rotate(-25 84 121)"/>
+          <rect x="100" y="112" width="4" height="2.5" rx="1.25" fill="#ff6b6b" transform="rotate(15 102 113)"/>
+          <rect x="120" y="122" width="4" height="2.5" rx="1.25" fill="#5f27cd" transform="rotate(-20 122 123)"/>
+          <rect x="138" y="116" width="4" height="2.5" rx="1.25" fill="#1dd1a1" transform="rotate(40 140 117)"/>
+          <rect x="80" y="78" width="8" height="25" rx="3" fill="url(#candleGrad)"/>
+          <rect x="80" y="78" width="3" height="25" rx="1.5" fill="rgba(255,255,255,0.3)"/>
+          <line x1="84" y1="78" x2="84" y2="103" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+          <line x1="84" y1="78" x2="84" y2="74" stroke="#555" stroke-width="0.8"/>
+          <g class="flame">
+            <ellipse cx="84" cy="72" rx="5" ry="8" fill="#fffde8"/>
+            <ellipse cx="84" cy="73" rx="3.5" ry="5.5" fill="#ffb347"/>
+            <ellipse cx="84" cy="74" rx="2" ry="3" fill="#e55a2b"/>
+          </g>
+          <rect x="96" y="75" width="8" height="28" rx="3" fill="url(#candleGrad)"/>
+          <rect x="96" y="75" width="3" height="28" rx="1.5" fill="rgba(255,255,255,0.3)"/>
+          <line x1="100" y1="75" x2="100" y2="103" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+          <line x1="100" y1="75" x2="100" y2="71" stroke="#555" stroke-width="0.8"/>
+          <g class="flame">
+            <ellipse cx="100" cy="69" rx="5.5" ry="9" fill="#fffde8"/>
+            <ellipse cx="100" cy="70" rx="4" ry="6" fill="#ffb347"/>
+            <ellipse cx="100" cy="71" rx="2.5" ry="3.5" fill="#e55a2b"/>
+          </g>
+          <rect x="112" y="78" width="8" height="25" rx="3" fill="url(#candleGrad)"/>
+          <rect x="112" y="78" width="3" height="25" rx="1.5" fill="rgba(255,255,255,0.3)"/>
+          <line x1="116" y1="78" x2="116" y2="103" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+          <line x1="116" y1="78" x2="116" y2="74" stroke="#555" stroke-width="0.8"/>
+          <g class="flame">
+            <ellipse cx="116" cy="72" rx="5" ry="8" fill="#fffde8"/>
+            <ellipse cx="116" cy="73" rx="3.5" ry="5.5" fill="#ffb347"/>
+            <ellipse cx="116" cy="74" rx="2" ry="3" fill="#e55a2b"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer-note">✦ 愿你每一天都闪闪发光 ✦</div>
+
+<!-- Editor toggle button -->
+<button class="editor-toggle" id="editorToggle" title="编辑卡片">✎</button>
+
+<!-- Editor panel -->
+<div class="editor-panel" id="editorPanel">
+  <div class="panel-header">✎ 贺卡编辑器</div>
+
+  <div class="field">
+    <label>收卡人</label>
+    <input type="text" id="recipient" value="亲爱的朋友" placeholder="输入名字…">
+  </div>
+  <div class="field">
+    <label>年龄</label>
+    <input type="number" id="age" value="" placeholder="如：18" min="1" max="200">
+  </div>
+  <div class="field">
+    <label>爱好</label>
+    <input type="text" id="hobbies" value="" placeholder="如：绘画、音乐、编程">
+  </div>
+  <div class="field">
+    <label>送卡人（你的名字）</label>
+    <input type="text" id="sender" value="" placeholder="你的名字">
+  </div>
+  <div class="field">
+    <label>封面标题</label>
+    <input type="text" id="title" value="生日快乐!" placeholder="封面大标题">
+  </div>
+  <div class="field">
+    <label>封面副标题</label>
+    <input type="text" id="subtitle" value="Happy Birthday!" placeholder="副标题">
+  </div>
+  <div class="field">
+    <label>封面图标</label>
+    <input type="text" id="emoji" value="🎂" placeholder="🎂 🎉 🎈 🥳">
+  </div>
+  <button class="btn-primary" onclick="generateGreeting()" style="margin:4px 0 2px">✨ 智能生成祝福语</button>
+
+  <div class="gen-history" id="genHistory" style="display:none">
+    <div class="gen-history-header">生成记录（点击使用）</div>
+    <div id="genHistoryList"></div>
+  </div>
+
+  <div class="field">
+    <label>祝福语（可手动修改）</label>
+    <textarea id="message" rows="3">祝你新的一岁，\n心想事成，<strong>闪闪发光</strong> ✨</textarea>
+  </div>
+
+  <div class="field">
+    <label>主题配色</label>
+    <div class="color-options" id="themeColors">
+      <button data-gradient="135deg,#ff6b9d,#c44dff" style="background:linear-gradient(135deg,#ff6b9d,#c44dff)" class="active"></button>
+      <button data-gradient="135deg,#667eea,#764ba2" style="background:linear-gradient(135deg,#667eea,#764ba2)"></button>
+      <button data-gradient="135deg,#f093fb,#f5576c" style="background:linear-gradient(135deg,#f093fb,#f5576c)"></button>
+      <button data-gradient="135deg,#4facfe,#00f2fe" style="background:linear-gradient(135deg,#4facfe,#00f2fe)"></button>
+      <button data-gradient="135deg,#43e97b,#38f9d7" style="background:linear-gradient(135deg,#43e97b,#38f9d7)"></button>
+      <button data-gradient="135deg,#fa709a,#fee140" style="background:linear-gradient(135deg,#fa709a,#fee140)"></button>
+      <button data-gradient="135deg,#a18cd1,#fbc2eb" style="background:linear-gradient(135deg,#a18cd1,#fbc2eb)"></button>
+      <button class="custom-btn" id="customColorBtn" title="自定义">+</button>
+      <input type="color" id="customColorPicker" style="display:none">
+    </div>
+  </div>
+
+  <div class="field">
+    <label>背景主题</label>
+    <select id="bgTheme">
+      <option value="dark">深空紫</option>
+      <option value="ocean">深海蓝</option>
+      <option value="sunset">日落橙</option>
+      <option value="forest">森林绿</option>
+      <option value="cherry">樱花粉</option>
+    </select>
+  </div>
+
+  <div class="toggle-group">
+    <label><input type="checkbox" id="toggleBalloons" checked> 气球</label>
+    <label><input type="checkbox" id="toggleStars" checked> 星星</label>
+    <label><input type="checkbox" id="toggleConfetti" checked> 纸屑</label>
+    <label><input type="checkbox" id="toggleSound" checked> 音效</label>
+  </div>
+
+  <div class="editor-actions">
+    <button class="btn-primary" onclick="exportCard()">⬇ 导出 HTML</button>
+    <button class="btn-secondary" onclick="resetCard()">⟳ 重置</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// Stars
+// ============================================================
+const starCanvas = document.getElementById('stars');
+const sctx = starCanvas.getContext('2d');
+let stars = [];
+
+function resizeStars() { starCanvas.width = window.innerWidth; starCanvas.height = window.innerHeight; }
+resizeStars();
+window.addEventListener('resize', resizeStars);
+
+function initStars(count = 160) {
+  stars = [];
+  for (let i = 0; i < count; i++) {
+    stars.push({
+      x: Math.random() * starCanvas.width, y: Math.random() * starCanvas.height,
+      r: Math.random() * 1.5 + 0.3, alpha: Math.random(), speed: Math.random() * 0.008 + 0.003,
+    });
+  }
+}
+initStars();
+
+let starEnabled = true;
+function drawStars() {
+  sctx.clearRect(0, 0, starCanvas.width, starCanvas.height);
+  if (starEnabled) {
+    for (const s of stars) {
+      s.alpha += s.speed;
+      const a = 0.5 + 0.5 * Math.sin(s.alpha);
+      sctx.beginPath(); sctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      sctx.fillStyle = `rgba(255,255,255,${a})`; sctx.fill();
+    }
+  }
+  requestAnimationFrame(drawStars);
+}
+drawStars();
+
+// ============================================================
+// Balloons
+// ============================================================
+const balloonColors = ['#ff6b6b','#f368e0','#ff9ff3','#54a0ff','#5f27cd','#1dd1a1','#feca57','#ff9f43','#ee5a24','#00d2d3'];
+const container = document.getElementById('balloonContainer');
+let balloonInterval = null;
+let balloonEnabled = true;
+
+function createBalloon() {
+  if (!balloonEnabled) return;
+  const el = document.createElement('div');
+  el.className = 'balloon';
+  const color = balloonColors[Math.floor(Math.random() * balloonColors.length)];
+  el.style.background = `radial-gradient(circle at 35% 30%, ${lighten(color,40)}, ${color})`;
+  el.style.color = color; el.style.left = Math.random() * 100 + '%';
+  el.style.transform = `scale(${0.7 + Math.random() * 0.8})`;
+  el.style.animationDuration = (8 + Math.random() * 12) + 's';
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 20000);
+}
+
+function lighten(hex, amt) {
+  let c = parseInt(hex.replace('#',''), 16);
+  let r = Math.min(255, (c >> 16) + amt);
+  let g = Math.min(255, ((c >> 8) & 0x00FF) + amt);
+  let b = Math.min(255, (c & 0x0000FF) + amt);
+  return `rgb(${r},${g},${b})`;
+}
+
+function startBalloons() {
+  if (balloonInterval) clearInterval(balloonInterval);
+  balloonInterval = setInterval(createBalloon, 900);
+  for (let i = 0; i < 10; i++) setTimeout(createBalloon, i * 150);
+}
+startBalloons();
+
+// ============================================================
+// Confetti
+// ============================================================
+const confettiCanvas = document.getElementById('confetti-canvas');
+const cctx = confettiCanvas.getContext('2d');
+let confettiPieces = [];
+let confettiRunning = false;
+let confettiEnabled = true;
+
+function resizeConfetti() { confettiCanvas.width = window.innerWidth; confettiCanvas.height = window.innerHeight; }
+resizeConfetti();
+window.addEventListener('resize', resizeConfetti);
+
+const confettiColors = ['#ff6b6b','#f368e0','#ff9ff3','#54a0ff','#5f27cd','#1dd1a1','#feca57','#ff9f43','#ee5a24','#00d2d3','#ff6b9d','#c44dff'];
+
+function createConfettiPiece() {
+  return {
+    x: Math.random() * confettiCanvas.width, y: -20 - Math.random() * 200,
+    w: 5 + Math.random() * 7, h: 3 + Math.random() * 5,
+    color: confettiColors[Math.floor(Math.random() * confettiColors.length)],
+    vy: 1.5 + Math.random() * 2.5, vx: -2 + Math.random() * 4,
+    rotation: Math.random() * 360, rotSpeed: -4 + Math.random() * 8,
+    opacity: 0.8 + Math.random() * 0.2, swing: Math.random() * 2,
+    swingSpeed: 0.03 + Math.random() * 0.04, phase: Math.random() * Math.PI * 2,
+  };
+}
+
+function startConfetti() {
+  if (!confettiEnabled || confettiRunning) return;
+  confettiRunning = true;
+  for (let i = 0; i < 120; i++) confettiPieces.push(createConfettiPiece());
+  animateConfetti();
+}
+
+function animateConfetti() {
+  cctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+  if (!confettiEnabled) { confettiRunning = false; confettiPieces = []; return; }
+  let alive = false;
+  for (const p of confettiPieces) {
+    p.y += p.vy; p.x += p.vx + Math.sin(p.phase) * p.swing;
+    p.phase += p.swingSpeed; p.rotation += p.rotSpeed;
+    if (p.y > confettiCanvas.height + 20) continue;
+    alive = true;
+    cctx.save();
+    cctx.translate(p.x, p.y); cctx.rotate(p.rotation * Math.PI / 180);
+    cctx.globalAlpha = p.opacity; cctx.fillStyle = p.color;
+    cctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+    cctx.restore();
+  }
+  if (alive) {
+    if (Math.random() < 0.08) confettiPieces.push(createConfettiPiece());
+    requestAnimationFrame(animateConfetti);
+  } else { confettiRunning = false; }
+}
+
+// ============================================================
+// Sound
+// ============================================================
+let soundEnabled = true;
+function playNote() {
+  if (!soundEnabled) return;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const notes = [523.25, 587.33, 659.25, 783.99, 1046.5];
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine'; osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.1, ctx.currentTime + i * 0.12);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.35);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + i * 0.12);
+      osc.stop(ctx.currentTime + i * 0.12 + 0.35);
+    });
+  } catch(e) {}
+}
+
+// ============================================================
+// Card — toggle open/close
+// ============================================================
+let isOpen = false;
+
+function toggleCard() {
+  if (isOpen) {
+    // Close
+    document.getElementById('card').classList.remove('open');
+    document.getElementById('tapHint').textContent = '👆 点击打开';
+    isOpen = false;
+  } else {
+    // Open
+    document.getElementById('card').classList.add('open');
+    document.getElementById('tapHint').textContent = '👆 点击关闭';
+    isOpen = true;
+    startConfetti();
+    playNote();
+    for (let i = 0; i < 6; i++) setTimeout(createBalloon, i * 80);
+  }
+}
+
+function resetCard() {
+  document.getElementById('card').classList.remove('open');
+  document.getElementById('tapHint').textContent = '👆 点击打开';
+  isOpen = false;
+  // Reset fields to default
+  document.getElementById('recipient').value = '亲爱的朋友';
+  document.getElementById('age').value = '';
+  document.getElementById('hobbies').value = '';
+  document.getElementById('sender').value = '';
+  document.getElementById('title').value = '生日快乐!';
+  document.getElementById('subtitle').value = 'Happy Birthday!';
+  document.getElementById('emoji').value = '🎂';
+  document.getElementById('message').value = '祝你新的一岁，\\n心想事成，<strong>闪闪发光</strong> ✨';
+  updatePreview();
+}
+
+document.addEventListener('keydown', (e) => {
+  if ((e.key === 'Enter' || e.key === ' ') && !isInputFocused()) toggleCard();
+});
+function isInputFocused() {
+  const t = document.activeElement;
+  return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT');
+}
+
+// ============================================================
+// Editor panel toggle
+// ============================================================
+let editorOpen = false;
+document.getElementById('editorToggle').addEventListener('click', () => {
+  editorOpen = !editorOpen;
+  document.getElementById('editorPanel').classList.toggle('open', editorOpen);
+  document.getElementById('editorToggle').textContent = editorOpen ? '✕' : '✎';
+});
+
+// ============================================================
+// Preview updates
+// ============================================================
+function updatePreview() {
+  document.getElementById('previewTitle').textContent = document.getElementById('title').value;
+  document.getElementById('previewSub').textContent = document.getElementById('subtitle').value;
+  document.getElementById('previewRecipient').textContent = document.getElementById('recipient').value;
+  document.getElementById('previewEmoji').textContent = document.getElementById('emoji').value || '🎂';
+  document.getElementById('previewMessage').innerHTML = document.getElementById('message').value.replace(/\\n/g, '\n');
+}
+
+// Theme colors
+document.querySelectorAll('#themeColors button[data-gradient]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#themeColors button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const front = document.getElementById('cardFront');
+    front.style.background = `linear-gradient(${btn.dataset.gradient})`;
+    const grad = `linear-gradient(${btn.dataset.gradient})`;
+    document.querySelectorAll('.card-inside h2, .card-inside .message strong').forEach(h => h.style.background = grad);
+  });
+});
+
+document.getElementById('customColorBtn').addEventListener('click', () => {
+  document.getElementById('customColorPicker').click();
+});
+document.getElementById('customColorPicker').addEventListener('input', (e) => {
+  const c = e.target.value;
+  document.querySelectorAll('#themeColors button').forEach(b => b.classList.remove('active'));
+  document.getElementById('customColorBtn').classList.add('active');
+  document.getElementById('customColorBtn').style.background = c;
+  const front = document.getElementById('cardFront');
+  front.style.background = `linear-gradient(135deg, ${c}, ${adjustColor(c, -40)})`;
+});
+
+function adjustColor(hex, amt) {
+  let c = parseInt(hex.replace('#',''), 16);
+  let r = Math.min(255, Math.max(0, (c >> 16) + amt));
+  let g = Math.min(255, Math.max(0, ((c >> 8) & 0x00FF) + amt));
+  let b = Math.min(255, Math.max(0, (c & 0x0000FF) + amt));
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+}
+
+// Background themes
+const bgThemes = {
+  dark:   'linear-gradient(135deg, #0f0c29, #302b63, #24243e)',
+  ocean:  'linear-gradient(135deg, #0c2340, #1a4a6b, #0f2c40)',
+  sunset: 'linear-gradient(135deg, #2d1b2e, #6b3a4a, #4a2b3a)',
+  forest: 'linear-gradient(135deg, #0a1f0e, #1a3a22, #0f2815)',
+  cherry: 'linear-gradient(135deg, #2a1a2e, #4a2a3e, #2d1a24)',
+};
+document.getElementById('bgTheme').addEventListener('change', (e) => {
+  document.body.style.background = bgThemes[e.target.value];
+});
+
+// Toggles
+document.getElementById('toggleBalloons').addEventListener('change', (e) => {
+  balloonEnabled = e.target.checked;
+});
+document.getElementById('toggleStars').addEventListener('change', (e) => {
+  starEnabled = e.target.checked;
+});
+document.getElementById('toggleConfetti').addEventListener('change', (e) => {
+  confettiEnabled = e.target.checked;
+  if (!confettiEnabled) { confettiPieces = []; cctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height); confettiRunning = false; }
+});
+document.getElementById('toggleSound').addEventListener('change', (e) => {
+  soundEnabled = e.target.checked;
+});
+
+// Real-time preview
+document.querySelectorAll('#editorPanel input, #editorPanel textarea').forEach(el => {
+  el.addEventListener('input', updatePreview);
+});
+
+// ============================================================
+// Generate greeting
+// ============================================================
+function generateGreeting() {
+  const name = document.getElementById('recipient').value || '朋友';
+  const age = document.getElementById('age').value;
+  const hobbies = document.getElementById('hobbies').value;
+  const sender = document.getElementById('sender').value;
+
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  let msg = '亲爱的 ' + name + '，\n';
+
+  // Opening
+  if (age) {
+    msg += pick([
+      '祝你' + age + '岁生日快乐！',
+      '恭喜迎来' + age + '岁的美好年华！',
+      age + '岁的你，是最棒的！',
+      '愿你的' + age + '岁，精彩纷呈！',
+      '在' + age + '岁的新起点上，愿你光芒万丈！',
+    ]);
+  } else {
+    msg += pick([
+      '祝你生日快乐！',
+      '祝你生日快乐，天天快乐！',
+      '在这个特别的日子里，祝你快乐不止今天！',
+      '愿你今天被全世界温柔以待！',
+      '祝你新的一岁，万事胜意！',
+    ]);
+  }
+  msg += '\n\n';
+
+  // Hobbies
+  const hobbyWishes = [
+    '尽情探索、自由生长，收获无限的快乐与惊喜！',
+    '不断突破、玩出精彩，把每一天都过成想要的样子！',
+    '保持热爱、奔赴山海，做最闪耀的自己！',
+    '越玩越出色，把热爱变成最亮眼的标签！',
+    '在热爱的领域里闪闪发光，活成自己喜欢的模样！',
+    '每一次尝试都是成长，每一份热爱都值得喝彩！',
+  ];
+
+  if (hobbies) {
+    const list = hobbies.split(/[,，、、\s]+/).filter(Boolean);
+    if (list.length > 0) {
+      msg += '愿你在';
+      if (list.length === 1) {
+        msg += list[0] + '的世界里';
+      } else if (list.length === 2) {
+        msg += list[0] + '和' + list[1] + '的世界里';
+      } else {
+        msg += list.slice(0, -1).join('、') + '和' + list[list.length - 1] + '的世界里';
+      }
+      msg += '，' + pick(hobbyWishes) + '\n\n';
+    }
+  }
+
+  // Closing
+  msg += pick([
+    '新的一岁，愿你每一天都闪闪发光，心想事成，笑容常驻！',
+    '愿你眼里有光、心中有爱，新的一岁万事胜意！',
+    '愿你岁岁常欢愉，年年皆胜意，生日快乐！',
+    '愿你所有的愿望都能实现，所有的美好都如约而至！',
+    '祝你前程似锦、未来可期，每一天都比昨天更精彩！',
+    '愿你被幸福包围，被好运眷顾，生日快乐！',
+    '愿时光温柔待你，愿梦想不负努力，新的一岁加油！',
+    '愿你做自己的太阳，无需凭借谁的光，生日快乐！',
+  ]) + '✨';
+
+  if (sender) {
+    msg += '\n\n—— ' + sender;
+  }
+
+  document.getElementById('message').value = msg;
+  updatePreview();
+  // Save to history
+  greetingHistory.unshift({ id: Date.now() + Math.random(), message: msg });
+  renderGreetingHistory();
+}
+
+let greetingHistory = [];
+
+function renderGreetingHistory() {
+  const container = document.getElementById('genHistoryList');
+  const wrapper = document.getElementById('genHistory');
+  if (!container) return;
+  if (greetingHistory.length === 0) {
+    wrapper.style.display = 'none';
+    return;
+  }
+  wrapper.style.display = 'block';
+  container.innerHTML = greetingHistory.map(function(item) {
+    var preview = item.message.replace(/\n/g, ' ').substring(0, 45);
+    // escape HTML
+    var div = document.createElement('div');
+    div.textContent = preview;
+    preview = div.innerHTML;
+    return '<div class="gen-history-item">' +
+      '<div class="preview" title="' + preview + '">' + preview + '</div>' +
+      '<button class="use-btn" onclick="useGreeting(' + item.id + ')">使用</button>' +
+      '<button class="del-btn" onclick="deleteGreeting(' + item.id + ')">✕</button>' +
+    '</div>';
+  }).join('');
+}
+
+function useGreeting(id) {
+  for (var i = 0; i < greetingHistory.length; i++) {
+    if (greetingHistory[i].id === id) {
+      document.getElementById('message').value = greetingHistory[i].message;
+      updatePreview();
+      return;
+    }
+  }
+}
+
+function deleteGreeting(id) {
+  greetingHistory = greetingHistory.filter(function(item) { return item.id !== id; });
+  renderGreetingHistory();
+}
+
+// ============================================================
+// Export
+// ============================================================
+function exportCard() {
+  const recipient = document.getElementById('recipient').value;
+  const title = document.getElementById('title').value;
+  const subtitle = document.getElementById('subtitle').value;
+  const emoji = document.getElementById('emoji').value || '🎂';
+  const message = document.getElementById('message').value.replace(/\\n/g, '\n');
+  const frontGrad = document.getElementById('cardFront').style.background ||
+    'linear-gradient(135deg, #ff6b9d, #c44dff)';
+  const bg = document.body.style.background || bgThemes[document.getElementById('bgTheme').value];
+
+  const html = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>🎂 生日快乐 - ${recipient}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    min-height:100svh;display:flex;justify-content:center;align-items:center;
+    background:${bg};font-family:'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+    overflow:hidden;position:relative;
+  }
+  canvas.stars{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0}
+  .balloon-container{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0}
+  .balloon{
+    position:absolute;bottom:-120px;width:46px;height:58px;
+    border-radius:50% 50% 50% 50%/40% 40% 60% 60%;opacity:0.8;
+    animation:floatUp linear infinite;
+  }
+  .balloon::after{content:'';position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);width:1.5px;height:24px;background:rgba(255,255,255,0.25)}
+  .balloon::before{content:'\\25B2';position:absolute;bottom:-14px;left:50%;transform:translateX(-50%) scaleX(0.5);color:inherit;font-size:8px}
+  @keyframes floatUp{
+    0%{transform:translateY(0) rotate(0deg);opacity:0.8}
+    100%{transform:translateY(-110vh) rotate(8deg);opacity:0}
+  }
+  .card-wrapper{position:relative;z-index:2;perspective:1200px;cursor:pointer}
+  .card{width:min(420px,85vw);aspect-ratio:3/4;position:relative;transform-style:preserve-3d;transition:transform .8s cubic-bezier(0.4,0,0.2,1)}
+  .card.open{transform:rotateY(-180deg)}
+  .card-face{
+    position:absolute;top:0;left:0;width:100%;height:100%;
+    backface-visibility:hidden;border-radius:min(20px,4vw);
+    box-shadow:0 20px 60px rgba(0,0,0,0.5);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:clamp(20px,5vw,36px) clamp(16px,5vw,30px);text-align:center;
+  }
+  .card-front{background:${frontGrad};color:#fff}
+  .card-front h1{font-size:clamp(1.6em,7vw,2.6em);margin-bottom:clamp(3px,1.5vw,6px);text-shadow:0 2px 10px rgba(0,0,0,0.2)}
+  .card-front .sub{font-size:clamp(0.85em,3vw,1.05em);opacity:0.85;margin-bottom:clamp(2px,1vw,4px)}
+  .card-front .recipient-name{font-size:clamp(1.1em,5vw,1.6em);font-weight:bold;margin:clamp(2px,1vw,4px) 0;opacity:0.95}
+  .card-front .tap-hint{margin-top:clamp(12px,4vw,22px);font-size:clamp(0.72em,2.5vw,0.82em);opacity:0.55;animation:pulse 2s ease-in-out infinite;user-select:none}
+  @keyframes pulse{0%,100%{opacity:0.35;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}}
+  .front-emoji{font-size:clamp(2.5em,12vw,4.5em);margin:clamp(3px,1.5vw,6px) 0;animation:bounce 2s ease-in-out infinite;line-height:1.2}
+  @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+  .card-inside{background:linear-gradient(145deg,#fff9e6,#fff3cd);color:#333;transform:rotateY(180deg);justify-content:flex-start;padding-top:clamp(18px,5vw,32px);overflow-y:auto}
+  .card-inside::-webkit-scrollbar{width:3px}
+  .card-inside::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.1);border-radius:2px}
+  .card-inside h2{font-size:clamp(1.15em,5vw,1.7em);background:${frontGrad};-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:clamp(4px,2vw,8px)}
+  .card-inside .message{font-size:clamp(0.82em,3vw,1em);line-height:1.8;color:#555;margin:clamp(4px,2vw,6px) clamp(10px,3vw,16px);white-space:pre-line;flex:1;display:flex;align-items:center;justify-content:center}
+  .card-inside .message strong{background:${frontGrad};-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .inside-cake{flex-shrink:0;margin-top:auto;display:flex;flex-direction:column;align-items:center;padding-bottom:clamp(8px,2vw,16px)}
+  .inside-cake svg{width:clamp(140px,38vw,190px);height:auto;display:block}
+  @keyframes flicker{0%{transform:scale(1) rotate(-1.5deg);opacity:0.9}50%{transform:scale(1.06) rotate(1deg);opacity:1}100%{transform:scale(0.96) rotate(-1deg);opacity:0.85}}
+  .inside-cake svg .flame{animation:flicker .4s ease-in-out infinite alternate;transform-origin:center;transform-box:fill-box}
+  #confetti-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10}
+  .footer-note{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.12);font-size:clamp(0.6em,2vw,0.72em);z-index:1;letter-spacing:2px;pointer-events:none;white-space:nowrap}
+
+  /* Mobile landscape: shorter card */
+  @media (max-height:500px) and (orientation:landscape){
+    .card{width:min(320px,60vw);max-height:90svh}
+    .card-front .front-emoji{font-size:2em}
+    .card-front h1{font-size:1.3em}
+    .card-front .recipient-name{font-size:1em}
+    .card-inside{padding-top:12px}
+    .card-inside h2{font-size:1em;margin-bottom:4px}
+    .inside-cake{transform:scale(0.65)}
+    .card-inside .message{font-size:0.75em;line-height:1.5}
+  }
+</style>
+</head>
+<body>
+<canvas class="stars" id="stars"></canvas>
+<div class="balloon-container" id="balloonContainer"></div>
+<canvas id="confetti-canvas"></canvas>
+<div class="card-wrapper" onclick="toggleCard()">
+  <div class="card" id="card">
+    <div class="card-face card-front">
+      <div class="front-emoji">${emoji}</div>
+      <h1>${title}</h1>
+      <div class="sub">${subtitle}</div>
+      <div class="recipient-name">${recipient}</div>
+      <div class="tap-hint" id="tapHint">👆 点击打开</div>
+    </div>
+    <div class="card-face card-inside">
+      <h2>🎉 生日快乐! 🎉</h2>
+      <div class="message">${message}</div>
+      <div class="inside-cake">
+        <svg viewBox="0 0 200 210" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="plateGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f0d5b0"/>
+              <stop offset="100%" stop-color="#d4a574"/>
+            </linearGradient>
+            <linearGradient id="tier1Grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#ffe8db"/>
+              <stop offset="100%" stop-color="#fcc4aa"/>
+            </linearGradient>
+            <linearGradient id="tier2Grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#fcd0bd"/>
+              <stop offset="100%" stop-color="#f0a880"/>
+            </linearGradient>
+            <linearGradient id="candleGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#f7dc6f"/>
+              <stop offset="50%" stop-color="#edd05e"/>
+              <stop offset="100%" stop-color="#e0b84a"/>
+            </linearGradient>
+          </defs>
+          <ellipse cx="100" cy="194" rx="84" ry="14" fill="rgba(0,0,0,0.06)"/>
+          <ellipse cx="100" cy="190" rx="84" ry="14" fill="url(#plateGrad)"/>
+          <ellipse cx="100" cy="188" rx="77" ry="10" fill="rgba(255,255,255,0.2)"/>
+          <rect x="32" y="137" width="136" height="48" rx="14" fill="url(#tier2Grad)"/>
+          <path d="M38 137 Q40 152 42 137" fill="#fffcf5"/>
+          <path d="M58 137 Q60 158 62 137" fill="#fffcf5"/>
+          <path d="M82 137 Q84 162 86 137" fill="#fffcf5"/>
+          <path d="M108 137 Q110 160 112 137" fill="#fffcf5"/>
+          <path d="M132 137 Q134 156 136 137" fill="#fffcf5"/>
+          <path d="M154 137 Q156 150 158 137" fill="#fffcf5"/>
+          <rect x="30" y="134" width="140" height="8" rx="4" fill="#fffcf5"/>
+          <rect x="52" y="103" width="96" height="38" rx="12" fill="url(#tier1Grad)"/>
+          <rect x="50" y="100" width="100" height="7" rx="3.5" fill="#fffcf5"/>
+          <rect x="48" y="152" width="5" height="3" rx="1.5" fill="#ff6b9d" transform="rotate(-20 50 153)"/>
+          <rect x="72" y="158" width="5" height="3" rx="1.5" fill="#54a0ff" transform="rotate(15 74 159)"/>
+          <rect x="95" y="150" width="5" height="3" rx="1.5" fill="#feca57" transform="rotate(-10 97 151)"/>
+          <rect x="118" y="160" width="5" height="3" rx="1.5" fill="#1dd1a1" transform="rotate(25 120 161)"/>
+          <rect x="142" y="154" width="5" height="3" rx="1.5" fill="#f368e0" transform="rotate(-30 144 155)"/>
+          <rect x="60" y="168" width="4" height="3" rx="1.5" fill="#00d2d3" transform="rotate(10 62 169)"/>
+          <rect x="130" y="170" width="4" height="3" rx="1.5" fill="#ff9f43" transform="rotate(-15 132 171)"/>
+          <rect x="62" y="114" width="4" height="2.5" rx="1.25" fill="#ff9f43" transform="rotate(30 64 115)"/>
+          <rect x="82" y="120" width="4" height="2.5" rx="1.25" fill="#00d2d3" transform="rotate(-25 84 121)"/>
+          <rect x="100" y="112" width="4" height="2.5" rx="1.25" fill="#ff6b6b" transform="rotate(15 102 113)"/>
+          <rect x="120" y="122" width="4" height="2.5" rx="1.25" fill="#5f27cd" transform="rotate(-20 122 123)"/>
+          <rect x="138" y="116" width="4" height="2.5" rx="1.25" fill="#1dd1a1" transform="rotate(40 140 117)"/>
+          <rect x="80" y="78" width="8" height="25" rx="3" fill="url(#candleGrad)"/>
+          <rect x="80" y="78" width="3" height="25" rx="1.5" fill="rgba(255,255,255,0.3)"/>
+          <line x1="84" y1="78" x2="84" y2="103" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+          <line x1="84" y1="78" x2="84" y2="74" stroke="#555" stroke-width="0.8"/>
+          <g class="flame">
+            <ellipse cx="84" cy="72" rx="5" ry="8" fill="#fffde8"/>
+            <ellipse cx="84" cy="73" rx="3.5" ry="5.5" fill="#ffb347"/>
+            <ellipse cx="84" cy="74" rx="2" ry="3" fill="#e55a2b"/>
+          </g>
+          <rect x="96" y="75" width="8" height="28" rx="3" fill="url(#candleGrad)"/>
+          <rect x="96" y="75" width="3" height="28" rx="1.5" fill="rgba(255,255,255,0.3)"/>
+          <line x1="100" y1="75" x2="100" y2="103" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+          <line x1="100" y1="75" x2="100" y2="71" stroke="#555" stroke-width="0.8"/>
+          <g class="flame">
+            <ellipse cx="100" cy="69" rx="5.5" ry="9" fill="#fffde8"/>
+            <ellipse cx="100" cy="70" rx="4" ry="6" fill="#ffb347"/>
+            <ellipse cx="100" cy="71" rx="2.5" ry="3.5" fill="#e55a2b"/>
+          </g>
+          <rect x="112" y="78" width="8" height="25" rx="3" fill="url(#candleGrad)"/>
+          <rect x="112" y="78" width="3" height="25" rx="1.5" fill="rgba(255,255,255,0.3)"/>
+          <line x1="116" y1="78" x2="116" y2="103" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+          <line x1="116" y1="78" x2="116" y2="74" stroke="#555" stroke-width="0.8"/>
+          <g class="flame">
+            <ellipse cx="116" cy="72" rx="5" ry="8" fill="#fffde8"/>
+            <ellipse cx="116" cy="73" rx="3.5" ry="5.5" fill="#ffb347"/>
+            <ellipse cx="116" cy="74" rx="2" ry="3" fill="#e55a2b"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="footer-note">✦ 愿你每一天都闪闪发光 ✦</div>
+<script>
+const sc=document.getElementById('stars'),sx=sc.getContext('2d');let st=[];
+function rs(){sc.width=innerWidth;sc.height=innerHeight}rs();onresize=rs;
+for(let i=160;i--;)st.push({x:Math.random()*sc.width,y:Math.random()*sc.height,r:Math.random()*1.5+0.3,a:Math.random(),s:Math.random()*0.008+0.003});
+function ds(){sx.clearRect(0,0,sc.width,sc.height);for(const s of st){s.a+=s.s;const a=.5+.5*Math.sin(s.a);sx.beginPath();sx.arc(s.x,s.y,s.r,0,7);sx.fillStyle='rgba(255,255,255,'+a+')';sx.fill()}requestAnimationFrame(ds)}ds();
+const bc=['#ff6b6b','#f368e0','#ff9ff3','#54a0ff','#5f27cd','#1dd1a1','#feca57','#ff9f43','#ee5a24','#00d2d3'],ct=document.getElementById('balloonContainer');
+function bl(){const e=document.createElement('div');e.className='balloon';const c=bc[Math.random()*bc.length|0];e.style.background='radial-gradient(circle at 35% 30%,'+c+','+c+')';e.style.color=c;e.style.left=Math.random()*100+'%';e.style.transform='scale('+(.7+Math.random()*.8)+')';e.style.animationDuration=(8+Math.random()*12)+'s';ct.appendChild(e);setTimeout(()=>e.remove(),2e4)}
+setInterval(bl,900);for(let i=10;i--;)setTimeout(bl,i*150);
+const cc=document.getElementById('confetti-canvas'),cx=cc.getContext('2d');let cp=[],cr=0;
+function rc(){cc.width=innerWidth;cc.height=innerHeight}rc();onresize=rc;
+const ccl=['#ff6b6b','#f368e0','#ff9ff3','#54a0ff','#5f27cd','#1dd1a1','#feca57','#ff9f43','#ee5a24','#00d2d3','#ff6b9d','#c44dff'];
+function mk(){return{x:Math.random()*cc.width,y:-20-Math.random()*200,w:5+Math.random()*7,h:3+Math.random()*5,c:ccl[Math.random()*ccl.length|0],vy:1.5+Math.random()*2.5,vx:-2+Math.random()*4,r:Math.random()*360,rs:-4+Math.random()*8,o:.8+Math.random()*.2,sw:Math.random()*2,ss:.03+.04*Math.random(),p:Math.random()*7}}
+function scf(){if(cr)return;cr=1;for(let i=120;i--;)cp.push(mk());ac()}
+function ac(){cx.clearRect(0,0,cc.width,cc.height);let al=0;for(const p of cp){p.y+=p.vy;p.x+=p.vx+Math.sin(p.p)*p.sw;p.p+=p.ss;p.r+=p.rs;if(p.y>cc.height+20)continue;al=1;cx.save();cx.translate(p.x,p.y);cx.rotate(p.r*Math.PI/180);cx.globalAlpha=p.o;cx.fillStyle=p.c;cx.fillRect(-p.w/2,-p.h/2,p.w,p.h);cx.restore()}if(al){if(Math.random()<.08)cp.push(mk());requestAnimationFrame(ac)}else cr=0}
+let io=0;
+function toggleCard(){if(io){document.getElementById('card').classList.remove('open');document.getElementById('tapHint').innerHTML='👆 点击打开';io=0}else{document.getElementById('card').classList.add('open');document.getElementById('tapHint').innerHTML='👆 点击关闭';io=1;scf();try{const a=new AudioContext(),n=[523.25,587.33,659.25,783.99,1046.5];n.forEach((f,i)=>{const o=a.createOscillator(),g=a.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.1,a.currentTime+i*.12);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+i*.12+.35);o.connect(g);g.connect(a.destination);o.start(a.currentTime+i*.12);o.stop(a.currentTime+i*.12+.35)})}catch(e){}}}
+document.addEventListener('keydown',e=>{(e.key==='Enter'||e.key===' ')&&toggleCard()});
+<\/script>
+</body>
+</html>`;
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `birthday_${recipient.replace(/\s+/g,'_')}.html`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ============================================================
+// Init
+// ============================================================
+updatePreview();
+</script>
+</body>
+</html>
